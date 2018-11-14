@@ -14,7 +14,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "-ggdb3")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fopt-info-vec -fopt-info-vec-missed -march=native")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ffast-math -fopt-info-vec -march=native")
 
 ################################
 # pThreads
@@ -28,11 +28,16 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 #################################
+# OpenMP
+
+find_package(OpenMP REQUIRED)
+
+#################################
 # Project targets
 include_directories(include)
 
 add_executable(Main src/main)
-target_link_libraries(Main ${OpenCV_LIBS} Threads::Threads)
+target_link_libraries(Main ${OpenCV_LIBS} Threads::Threads OpenMP::OpenMP_CXX)
 
 #add_executable(Experiment src/experiment)
 #target_link_libraries(Experiment ${OpenCV_LIBS} stdc++fs Threads::Threads)
@@ -42,3 +47,8 @@ target_link_libraries(Main ${OpenCV_LIBS} Threads::Threads)
 
 #add_executable(Tmp src/tmp)
 #target_link_libraries(Tmp ${OpenCV_LIBS})
+
+################################
+# Notes
+# $make -B VERBOSE=1
+# to force compilation process and print used commands

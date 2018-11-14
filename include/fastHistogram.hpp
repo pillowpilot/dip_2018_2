@@ -54,14 +54,17 @@ namespace transform
 	std::copy(std::begin(dataB), std::end(dataB), std::begin(histogram));
       
       else if(a.first == 0 && a.second != 0) // Touches top border
+	#pragma omp simd
 	for(size_t level = 0; level < graylevels; ++level)
 	  histogram[level] = dataB[level] - data[b.first][a.second-1][level];
       
       else if( a.first != 0 && a.second == 0) // Touches left border
+	#pragma omp simd
 	for(size_t level = 0; level < graylevels; ++level)
 	  histogram[level] = dataB[level] - data[a.first-1][b.second][level];
 
       else // Tipical case
+	#pragma omp simd	
 	for(size_t level = 0; level < graylevels; ++level)
 	  histogram[level] = // First add, then substract to avoid signed temp values
 	    dataB[level] +
