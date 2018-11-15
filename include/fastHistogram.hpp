@@ -87,8 +87,11 @@ namespace transform
       // Fill upper row
       for(size_t col = 1; col < cols; ++col)
 	{
-	  std::fill(std::begin(data[0][col]), std::end(data[0][col]), 0);
-	  data[0][col][*imageRow0Ptr] = 1;
+	  #pragma omp simd
+	  for(size_t level = 0; level < graylevels; ++level)
+	    data[0][col][level] = data[0][col-1][level];
+	  
+	  data[0][col][*imageRow0Ptr] += 1;
 	  ++imageRow0Ptr;
 	}
 
@@ -96,7 +99,11 @@ namespace transform
       for(size_t row = 1; row < rows; ++row)
 	{ 
 	  auto imageRowPtr = image.ptr<image_t>(row);
-	  std::fill(std::begin(data[row][0]), std::end(data[row][0]), 0);
+
+          #pragma omp simd
+	  for(size_t level = 0; level < graylevels; ++level)
+	    data[row][0][level] = data[row-1][0][level];
+	  
 	  data[row][0][*imageRowPtr] += 1;
 	  ++imageRowPtr;
 	  for(size_t col = 1; col < cols; ++col)
