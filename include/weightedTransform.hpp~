@@ -1,0 +1,14 @@
+#ifndef WEIGHTEDTRANSFORM_H
+#define WEIGHTEDTRANSFORM_H
+
+#include <opencv2/opencv.hpp>
+
+namespace transform
+{
+  class WeightedTransform
+  {
+    
+  };
+};
+
+#endif /* WEIGHTEDTRANSFORM_H */

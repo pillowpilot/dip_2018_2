@@ -1,0 +1,16 @@
+#ifndef DOMAINDEFINER_H
+#define DOMAINDEFINER_H
+
+#include "commons.hpp"
+
+namespace transform
+{
+  class DomainDefiner
+  {
+  public:
+    virtual commons::coords_t getUpperLeftCorner(const commons::coords_t& point) = 0;
+    virtual commons::coords_t getBottomRightCorner(const commons::coords_t& point) = 0;
+  };
+};
+
+#endif /* DOMAINDEFINER_H */

@@ -1,0 +1,9 @@
+#ifndef MASKDOMAINDEFINER_H
+#define MASKDOMAINDEFINER_H
+
+namespace transform
+{
+  
+};
+
+#endif /* MASKDOMAINDEFINER_H */

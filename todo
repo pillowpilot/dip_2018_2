@@ -1,0 +1,2 @@
+1. Reduce size per element in fast histogram array
+2. Check for overflow (extremly unlikely)

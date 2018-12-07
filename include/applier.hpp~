@@ -1,0 +1,11 @@
+#ifndef APPLIER_H
+#define APPLIER_H
+
+#include <opencv2/opencv.hpp>
+
+class Applier
+{
+  
+};
+
+#endif /* APPLIER_H */

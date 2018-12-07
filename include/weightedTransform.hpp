@@ -7,13 +7,14 @@
 
 namespace transform
 {
+  template <typename T>
   class WeightedTransform
   {
   public:
     using coords_t = commons::coords_t;
   
   private:
-    Entropy redTransform, greenTransform, blueTransform;
+    const T redTransform, greenTransform, blueTransform;
   
   public:
     WeightedTransform(const cv::Mat& redChannel,
@@ -22,13 +23,17 @@ namespace transform
       redTransform(redChannel), greenTransform(greenChannel), blueTransform(blueChannel)
     { }
 
-    double calculate(const coords_t& a, const coords_t& b, const commons::pixel_t& rgb)
+    double calculate(const coords_t& a, const coords_t& b, const commons::pixel_t& rgb) const
     {
-      const double w1 = redTransform.calculate(a, b);
-      const double w2 = greenTransform.calculate(a, b);
-      const double w3 = blueTransform.calculate(a, b);
+      double w1 = redTransform.calculate(a, b);
+      double w2 = greenTransform.calculate(a, b);
+      double w3 = blueTransform.calculate(a, b);
+      w1 /= w1 + w2 + w3;
+      w2 /= w1 + w2 + w3;
+      w3 /= w1 + w2 + w3;
 
       return w1*rgb[0] + w2*rgb[1] + w3*rgb[2];
+      //return w1*rgb[0] + w2*rgb[0] + w3*rgb[0];
     }
   };
 };

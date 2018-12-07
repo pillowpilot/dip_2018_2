@@ -1,14 +1,15 @@
 #ifndef APPLIER_H
 #define APPLIER_H
 
+#include <iostream>
 #include <queue>
 #include <opencv2/opencv.hpp>
 #include "commons.hpp"
 #include "weightedTransform.hpp"
+#include "domainDefiner/domainDefiner.hpp"
 
 namespace transform
 {
-
   class ExtendedPixel
   {
   public:
@@ -46,15 +47,26 @@ namespace transform
       return false;
     }
 
-    intensity_t getRed() const { return red; }
-    intensity_t getGreen() const { return green; }
-    intensity_t getBlue() const { return blue; }
+    inline intensity_t getRed() const { return red; }
+    inline intensity_t getGreen() const { return green; }
+    inline intensity_t getBlue() const { return blue; }
+    inline void setExtended(const double newValue) { extended = newValue; }
+
+    friend std::ostream& operator<<(std::ostream& os, const ExtendedPixel& ep)
+    {
+      return os << "(" << ep.extended << ", "
+		<< (int) ep.red << ", "
+		<< (int) ep.green << ", "
+		<< (int) ep.blue << ")";
+    }
   };
 
+  template <typename T>
   class Applier
   {
   public:
-    static cv::Mat apply(const cv::Mat& input, const uint8_t maskRadius)
+    static cv::Mat apply(const cv::Mat& input, const uint8_t maskRadius,
+			 const domain::DomainDefiner& domainDefiner)
     {
       cv::Mat padded;
       cv::copyMakeBorder(input, padded,
@@ -64,22 +76,27 @@ namespace transform
       cv::Mat channels[3];
       cv::split(padded, channels);
 
-      WeightedTransform wt(channels[0], channels[1], channels[2]);
+      WeightedTransform<T> wt(channels[0], channels[1], channels[2]);
     
-      cv::Mat output(padded.rows, padded.cols, padded.type());
+      cv::Mat outputPadded(padded.rows, padded.cols, padded.type());
 
       // Run processARow in parallel
       {
 #pragma omp parallel for
 	for(size_t row = maskRadius; row < padded.rows-maskRadius; ++row)
-	  processARow(padded, output, wt, maskRadius, row);
+	  processARow(padded, outputPadded, wt, domainDefiner, maskRadius, row);
       }
+
+      cv::Rect roi(maskRadius, maskRadius,
+		   outputPadded.rows - 2*maskRadius, outputPadded.cols - 2*maskRadius);
+      cv::Mat output(outputPadded, roi);
 
       return output;
     }
 
     static void processARow(const cv::Mat& padded, cv::Mat& output,
-			    WeightedTransform transform, const uint8_t maskRadius,
+			    const WeightedTransform<T>& transform,
+			    const domain::DomainDefiner& domainDefiner, const uint8_t maskRadius,
 			    const size_t row)
     {
       CV_Assert(padded.channels() == 3);
@@ -89,6 +106,7 @@ namespace transform
       using commons::intensity_t;
 
       auto outputPtr = output.ptr<pixel_t>(row);
+      outputPtr += maskRadius;
 
       // Keep an array of pointers to every row of interest
       pixel_t const * rowPtr[2*maskRadius+1];
@@ -109,33 +127,52 @@ namespace transform
 	}
       CV_Assert(q.size() == (2*maskRadius+1)*(2*maskRadius));
 
-
       // Process pixels
       std::vector<ExtendedPixel> neighborhood;
       neighborhood.reserve((2*maskRadius+1)*(2*maskRadius+1));
       for(size_t col = maskRadius; col < padded.cols-maskRadius; ++col)
 	{
+	  // Add last column
+	  for(size_t j = 0; j < 2*(int)maskRadius+1; ++j)
+	    {
+	      const pixel_t& px = *rowPtr[j];
+	      q.push_back(px);
+	      ++rowPtr[j];
+	    }
+	  CV_Assert(q.size() == (2*maskRadius+1)*(2*maskRadius+1));
+	  
 	  neighborhood.clear();
 	  for(const auto& ep: q)
 	    neighborhood.push_back(ep);
 
+	  //debug("beforeSort");
+	  //debug(neighborhood);
+
+	  //#pragma omp simd
 	  for(auto& ep: neighborhood)
-	    transform.calculate({row-maskRadius, col-maskRadius},
-				{row+maskRadius, col+maskRadius},
-				{ep.getRed(), ep.getGreen(), ep.getBlue()}); // TODO Faster
+	    {
+	      ep.setExtended(transform.calculate(domainDefiner.getUpperLeftCorner({row, col}),
+						 domainDefiner.getBottomRightCorner({row, col}),
+						 {ep.getRed(), ep.getGreen(), ep.getBlue()})
+			     );
+	    }
 	  
 	  std::sort(std::begin(neighborhood), std::end(neighborhood));
+	  //debug("afterSort");
+	  //debug(neighborhood);
 	  const auto& median = neighborhood[neighborhood.size()/2];
+	  //debug(median);
 
+	  //debug(padded.at<pixel_t>(row, col));
+	  //debug(*outputPtr);
 	  *outputPtr = {median.getRed(), median.getGreen(), median.getBlue()};
+	  //debug(*outputPtr);
 	  ++outputPtr;
 
 	  // Update deque
 	  for(size_t i = 0; i < 2*maskRadius+1; ++i)
 	    {
 	      q.pop_front();
-	      q.push_back(*rowPtr[i]);
-	      ++rowPtr[i];
 	    }
 	}
     }

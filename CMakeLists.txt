@@ -37,7 +37,7 @@ find_package(OpenMP REQUIRED)
 include_directories(include)
 
 add_executable(Main src/main)
-target_link_libraries(Main ${OpenCV_LIBS} Threads::Threads OpenMP::OpenMP_CXX)
+target_link_libraries(Main ${OpenCV_LIBS} stdc++fs Threads::Threads OpenMP::OpenMP_CXX)
 
 #add_executable(Experiment src/experiment)
 #target_link_libraries(Experiment ${OpenCV_LIBS} stdc++fs Threads::Threads)

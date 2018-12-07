@@ -1,0 +1,30 @@
+#ifndef MAE_H
+#define MAE_H
+
+#include <opencv2/opencv.hpp>
+
+namespace metric
+{
+  class MAE
+  {
+  public:
+    static double calculate(const cv::Mat& inputA, const cv::Mat& inputB)
+    {
+      CV_Assert(inputA.data && inputB.data);
+      CV_Assert(inputA.rows == inputB.rows);
+      CV_Assert(inputA.cols == inputB.cols);
+    
+      cv::Mat difference;
+      cv::absdiff(inputA, inputB, difference);
+
+      const auto sumsPerChannel = cv::sum(difference);
+      const double sums = sumsPerChannel[0] + sumsPerChannel[1] + sumsPerChannel[2];
+
+      const double normalizer = 3*inputA.rows*inputA.cols;
+
+      return sums / normalizer;
+    }
+  };
+};
+
+#endif /* MAE_H */

@@ -1,0 +1,57 @@
+#ifndef GAUSSIAN_H
+#define GAUSSIAN_H
+
+#include <random>
+#include "../commons.hpp"
+#include "noise.hpp"
+#include <opencv2/opencv.hpp>
+
+namespace noise
+{
+  class GaussianNoise: public Noise
+  {
+  private:
+    std::mt19937 rng;
+    std::normal_distribution<double> distribution;
+  
+  public:
+    GaussianNoise(const double mean, const double stddev):
+      distribution(mean, stddev)
+    {
+      rng.seed(std::random_device()());
+    }
+  
+    cv::Mat apply(const cv::Mat& image) override
+    {
+      using commons::pixel_t;
+      cv::Mat output = image.clone();
+
+      output.forEach<pixel_t>([&](pixel_t& pixel, const int position[]) -> void
+			      {
+				using std::min;
+				using std::max;
+				using commons::intensity_t;
+			       
+				double red = (double)pixel[0]/255.0;
+				double green = (double)pixel[1]/255.0;
+				double blue = (double)pixel[2]/255.0;
+				
+				red += distribution(rng);
+				green += distribution(rng);
+				blue += distribution(rng);
+
+				red *= 255.0;
+				green *= 255.0;
+				blue *= 255.0;
+
+				pixel[0] = (intensity_t) max(0.0, min(255.0, red));
+				pixel[1] = (intensity_t) max(0.0, min(255.0, green));
+				pixel[2] = (intensity_t) max(0.0, min(255.0, blue));
+			      });
+    
+      return output;
+    }
+  };
+};
+
+#endif /* GAUSSIAN_H */
